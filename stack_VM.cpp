@@ -18,11 +18,13 @@ private:
 
 public:
     // Prepare the VM with a new program and reset state
-    void loadprogram(const std::vector<int> &prog)
+    void loadprogram(const std::vector<int> &prog, bool reset_globals = true)
     {
         program = prog;
         ip = 0;
-        globals.assign(100, 0); // Pre-allocate space for 100 variables
+        if (reset_globals) {
+            globals.assign(100, 0); // Pre-allocate space for 100 variables
+        }
         stack.clear();
     }
 
