@@ -1,0 +1,2 @@
+// This is a test script for CVM++
+100 / (2 * 5) + 3 // Should be 13
