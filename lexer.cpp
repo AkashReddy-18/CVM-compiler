@@ -92,7 +92,14 @@ token lexer::nexttoken()
         {
             id_str+=advance();
         }   
-        if(id_str=="int" || id_str=="return" || id_str=="if")
+        if(id_str=="int" || id_str=="return")
+        {
+            return token{tokentype::keyword, id_str, cur_line};
+        }
+        if(id_str=="if") return token{tokentype::kw_if, id_str, cur_line};
+        if(id_str=="else") return token{tokentype::kw_else, id_str, cur_line};
+        if(id_str=="while") return token{tokentype::kw_while, id_str, cur_line};
+        if(id_str=="let" || id_str=="print")
         {
             return token{tokentype::keyword, id_str, cur_line};
         }
