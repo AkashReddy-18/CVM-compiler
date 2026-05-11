@@ -11,7 +11,10 @@ enum class tokentype {
     op,
     punctuation,
     endoffile,
-    unknown
+    unknown,
+    kw_if,    // NEW
+    kw_else,  // NEW
+    kw_while  // NEW
 };
 
 struct token {
@@ -28,7 +31,13 @@ enum class opcode : int {
     mul,
     div,
     print,
-    halt
+    halt,
+    set_global,
+    get_global,
+    jump,           // NEW: Unconditional jump
+    jump_if_false,  // NEW: Jump if top of stack is 0
+    less,           // NEW: a < b
+    equal           // NEW: a == b
 };
 
 #endif
