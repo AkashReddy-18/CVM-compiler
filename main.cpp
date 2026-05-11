@@ -9,34 +9,40 @@
 #include "compiler.cpp"
 #include "stack_VM.cpp"
 
+// Global instances for REPL persistence
+compiler global_comp;
+stackVM global_vm;
+
 /**
- * Runs the full CVM++ pipeline: Lexing -> Parsing -> Compiling -> Executing
+ * Runs the full CVM++ pipeline.
+ * @param is_repl If true, uses global compiler/VM and preserves state.
  */
-void run(const std::string& code)
+void run(const std::string& code, bool is_repl = false)
 {
     if(code.empty()) return;
 
     try
     {
-        // 1. Lexing: Break code into tokens
         lexer lex(code);
-
-        // 2. Parsing: Build an AST (List of Statements)
         parser parser_obj(lex);
         auto program_ast = parser_obj.parse_program();
 
-        // 3. Compiling: Turn AST into VM Bytecode
-        compiler comp;
-        auto bytecode = comp.compile(program_ast);
-
-        // 4. Executing: Run the bytecode on the Virtual Machine
-        stackVM vm;
-        vm.loadprogram(bytecode);
-        vm.run();
+        if (is_repl) {
+            auto bytecode = global_comp.compile(program_ast);
+            global_vm.loadprogram(bytecode, false); // false = don't reset globals
+            global_vm.run();
+        } else {
+            // Fresh instances for file running
+            compiler local_comp;
+            stackVM local_vm;
+            auto bytecode = local_comp.compile(program_ast);
+            local_vm.loadprogram(bytecode, true);
+            local_vm.run();
+        }
     }
     catch(const std::exception& e)
     {
-        std::cerr << "Runtime Error: " << e.what() << '\n';
+        std::cerr << "Error: " << e.what() << '\n';
     }
 }
 
@@ -58,7 +64,7 @@ void run_repl() {
             break;
         }
 
-        run(line);
+        run(line, true);
     }
 }
 
@@ -76,19 +82,17 @@ void run_file(const std::string& filename) {
     std::stringstream buffer;
     buffer << file.rdbuf();
     
-    run(buffer.str());
+    run(buffer.str(), false);
 }
 
 /**
- * Main Entry Point: Decides between REPL and File mode based on arguments
+ * Main Entry Point
  */
 int main(int argc, char* argv[]) {
     if (argc == 1) {
-        // No file provided -> Start REPL
         run_repl();
     } 
     else if (argc == 2) {
-        // File provided -> Execute it
         run_file(argv[1]);
     } 
     else {
