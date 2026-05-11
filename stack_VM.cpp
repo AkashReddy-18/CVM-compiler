@@ -22,9 +22,17 @@ public:
     {
         program = prog;
         ip = 0;
-        if (reset_globals) {
-            globals.assign(100, 0); // Pre-allocate space for 100 variables
+
+        // Ensure we have memory for variables
+        if (globals.empty()) {
+            globals.resize(100, 0);
         }
+
+        // If we want a fresh start (like running a new file), clear the memory
+        if (reset_globals) {
+            std::fill(globals.begin(), globals.end(), 0);
+        }
+        
         stack.clear();
     }
 
