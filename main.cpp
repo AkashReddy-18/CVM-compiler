@@ -28,8 +28,15 @@ void run(const std::string& code, bool is_repl = false)
         auto program_ast = parser_obj.parse_program();
 
         if (is_repl) {
+            // For REPL: if the user enters a standalone expression, automatically print it
+            for (auto& stmt : program_ast) {
+                // If it's a "naked" expression (binary or literal), wrap it in a print
+                if (dynamic_cast<binary_expr*>(stmt.get()) || dynamic_cast<literal_expr*>(stmt.get()) || dynamic_cast<var_read_expr*>(stmt.get())) {
+                    stmt = std::make_unique<print_stmt>(std::move(stmt));
+                }
+            }
             auto bytecode = global_comp.compile(program_ast);
-            global_vm.loadprogram(bytecode, false); // false = don't reset globals
+            global_vm.loadprogram(bytecode, false); 
             global_vm.run();
         } else {
             // Fresh instances for file running
