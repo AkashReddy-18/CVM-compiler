@@ -6,9 +6,6 @@
 #include "common.h"
 #include "ast.h"
 
-/**
- * The compiler walks through the AST and emits VM bytecode.
- */
 class compiler : public ast_visitor
 {
 private:
@@ -24,7 +21,6 @@ private:
         return symbol_table[name];
     }
 
-    // Helper to change a value in the bytecode at a specific index
     void patch(int index, int value)
     {
         byte_code[index] = value;
@@ -95,37 +91,25 @@ public:
 
     void visit(if_stmt* expr) override
     {
-        // 1. Compile condition
         expr->condition->accept(this);
-        
-        // 2. Emit JUMP_IF_FALSE with placeholder
         byte_code.push_back(static_cast<int>(opcode::jump_if_false));
         int jump_if_false_idx = byte_code.size();
-        byte_code.push_back(0); // placeholder
+        byte_code.push_back(0); 
         
-        // 3. Compile 'then' branch
         expr->then_branch->accept(this);
         
-        // 4. Handle 'else' or end of if
         if (expr->else_branch) 
         {
-            // Emit JUMP to skip else branch
             byte_code.push_back(static_cast<int>(opcode::jump));
             int jump_idx = byte_code.size();
-            byte_code.push_back(0); // placeholder
+            byte_code.push_back(0); 
             
-            // Patch JUMP_IF_FALSE to start of else
             patch(jump_if_false_idx, byte_code.size());
-            
-            // Compile 'else' branch
             expr->else_branch->accept(this);
-            
-            // Patch JUMP to end of else
             patch(jump_idx, byte_code.size());
         }
         else 
         {
-            // No else: Patch JUMP_IF_FALSE to here
             patch(jump_if_false_idx, byte_code.size());
         }
     }
@@ -133,24 +117,23 @@ public:
     void visit(while_stmt* expr) override
     {
         int start_label = byte_code.size();
-        
-        // 1. Compile condition
         expr->condition->accept(this);
         
-        // 2. Emit JUMP_IF_FALSE with placeholder
         byte_code.push_back(static_cast<int>(opcode::jump_if_false));
         int jump_if_false_idx = byte_code.size();
-        byte_code.push_back(0); // placeholder
+        byte_code.push_back(0); 
         
-        // 3. Compile body
         expr->body->accept(this);
         
-        // 4. Emit JUMP to start
         byte_code.push_back(static_cast<int>(opcode::jump));
         byte_code.push_back(start_label);
         
-        // 5. Patch JUMP_IF_FALSE to here
         patch(jump_if_false_idx, byte_code.size());
+    }
+
+    void visit(input_expr* expr) override
+    {
+        byte_code.push_back(static_cast<int>(opcode::input));
     }
 
     std::vector<int> compile(const std::vector<std::unique_ptr<Expr>>& program) {
