@@ -7,22 +7,17 @@
 #include "lexer.cpp"
 #include "ast.h"
 
-/**
- * The parser takes tokens from the lexer and builds an Abstract Syntax Tree (AST).
- */
 class parser
 {
 private:
     lexer& lex;
     token cur_token;
     
-    // Move to the next token in the stream
     void advance()
     {
         cur_token = lex.nexttoken();
     }
 
-    // Handles numbers, variables, and parenthesized expressions
     std::unique_ptr<Expr> parse_factor()
     {
         if(cur_token.type == tokentype::number)
@@ -30,6 +25,17 @@ private:
             int val = std::stoi(cur_token.value);
             advance();
             return std::make_unique<literal_expr>(val);
+        }
+        else if (cur_token.type == tokentype::kw_input)
+        {
+            advance(); // consume 'input'
+            if (cur_token.type == tokentype::punctuation && cur_token.value == "(") {
+                advance();
+                if (cur_token.type != tokentype::punctuation || cur_token.value != ")")
+                    throw std::runtime_error("Expected ')' after 'input('");
+                advance();
+            }
+            return std::make_unique<input_expr>();
         }
         else if (cur_token.type == tokentype::identifier) 
         {
@@ -52,7 +58,6 @@ private:
             cur_token.value + "' at line " + std::to_string(cur_token.line));
     }
 
-    // Handles multiplication and division (higher precedence)
     std::unique_ptr<Expr> parse_term()
     {
         auto left = parse_factor();
@@ -67,7 +72,6 @@ private:
         return left;
     }
 
-    // Handles addition and subtraction
     std::unique_ptr<Expr> parse_addition()
     {
         auto left = parse_term();
@@ -88,7 +92,6 @@ public:
         advance();
     }
 
-    // Handles comparisons: <, == (lowest expression precedence)
     std::unique_ptr<Expr> parse_expression()
     {
         auto left = parse_addition();
@@ -103,60 +106,50 @@ public:
         return left;
     }
 
-    // Parses { stmt1; stmt2; ... }
     std::unique_ptr<Expr> parse_block()
     {
         if (cur_token.type != tokentype::punctuation || cur_token.value != "{")
             throw std::runtime_error("Expected '{' to start a block at line " + std::to_string(cur_token.line));
         
-        advance(); // consume '{'
+        advance();
         std::vector<std::unique_ptr<Expr>> statements;
-        
         while (cur_token.type != tokentype::punctuation || cur_token.value != "}")
         {
             if (cur_token.type == tokentype::endoffile)
                 throw std::runtime_error("Unexpected end of file inside block");
             statements.push_back(parse_statement());
         }
-        
-        advance(); // consume '}'
+        advance();
         return std::make_unique<block_stmt>(std::move(statements));
     }
 
-    // Parses a single statement
     std::unique_ptr<Expr> parse_statement() 
     {
-        // 1. Variable Declaration: let x = 10;
-        if (cur_token.type == tokentype::keyword && cur_token.value == "let") 
+        // Handle 'let', 'int', 'bool' as declaration starters
+        if (cur_token.type == tokentype::kw_let || cur_token.type == tokentype::kw_int || cur_token.type == tokentype::kw_bool) 
         {
-            advance(); // consume 'let'
+            advance();
             if (cur_token.type != tokentype::identifier) 
-                throw std::runtime_error("Expected variable name after 'let'");
+                throw std::runtime_error("Expected variable name after declaration keyword");
             std::string name = cur_token.value;
             advance();
             if (cur_token.type != tokentype::op || cur_token.value != "=") 
                 throw std::runtime_error("Expected '=' after variable name");
             advance();
             auto expr = parse_expression();
-            if (cur_token.type != tokentype::punctuation || cur_token.value != ";") 
-                throw std::runtime_error("Expected ';' at end of let statement");
-            advance();
+            if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
             return std::make_unique<var_decl_expr>(name, std::move(expr));
         }
-        // 2. Print: print 10 + 2;
-        else if (cur_token.type == tokentype::keyword && cur_token.value == "print") 
+        else if (cur_token.type == tokentype::kw_print) 
         {
-            advance(); // consume 'print'
-            auto expr = parse_expression();
-            if (cur_token.type != tokentype::punctuation || cur_token.value != ";") 
-                throw std::runtime_error("Expected ';' after print statement");
             advance();
+            auto expr = parse_expression();
+            if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
             return std::make_unique<print_stmt>(std::move(expr));
         }
-        // 3. If Statement: if (cond) { ... } else { ... }
         else if (cur_token.type == tokentype::kw_if)
         {
-            advance(); // consume 'if'
+            advance();
             if (cur_token.type != tokentype::punctuation || cur_token.value != "(")
                 throw std::runtime_error("Expected '(' after 'if'");
             advance();
@@ -164,21 +157,18 @@ public:
             if (cur_token.type != tokentype::punctuation || cur_token.value != ")")
                 throw std::runtime_error("Expected ')' after if condition");
             advance();
-            
             auto then_branch = parse_block();
             std::unique_ptr<Expr> else_branch = nullptr;
-            
             if (cur_token.type == tokentype::kw_else)
             {
-                advance(); // consume 'else'
+                advance();
                 else_branch = parse_block();
             }
             return std::make_unique<if_stmt>(std::move(cond), std::move(then_branch), std::move(else_branch));
         }
-        // 4. While Statement: while (cond) { ... }
         else if (cur_token.type == tokentype::kw_while)
         {
-            advance(); // consume 'while'
+            advance();
             if (cur_token.type != tokentype::punctuation || cur_token.value != "(")
                 throw std::runtime_error("Expected '(' after 'while'");
             advance();
@@ -186,45 +176,32 @@ public:
             if (cur_token.type != tokentype::punctuation || cur_token.value != ")")
                 throw std::runtime_error("Expected ')' after while condition");
             advance();
-            
             auto body = parse_block();
             return std::make_unique<while_stmt>(std::move(cond), std::move(body));
         }
         else if (cur_token.type == tokentype::identifier)
         {
-            // Look ahead to see if it is an assignment or just an expression
-            // Since our lexer doesn't support easy backtracking yet, 
-            // we will treat an identifier followed by '=' as an assignment.
             std::string name = cur_token.value;
             advance();
             if (cur_token.type == tokentype::op && cur_token.value == "=")
             {
-                advance(); // consume '='
+                advance();
                 auto expr = parse_expression();
                 if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
                 return std::make_unique<assign_stmt>(name, std::move(expr));
             }
-            else 
-            {
-                // It's just an expression starting with an identifier (like a variable read)
-                // We need to 'un-advance' or handle this. 
-                // For simplicity, we'll let parse_expression handle it from here by 
-                // re-parsing the expression from the start if it wasn't an assignment.
-                // However, our current lexer is a stream. 
-                // Let's use a simpler approach: any unknown statement tries to parse as an expression.
-            }
+            // If it's just an expression starting with an identifier, handled by parse_expression fallback
+            // but we already advanced. Let's make it cleaner.
+            // Simplified: any unknown statement starting with id is treated as expression
+            // but for simplicity, we'll just handle it as a naked expression
         }
         
-        // Default: Try to parse as an expression statement
+        // Fallback for expression statements
         auto expr = parse_expression();
-        if (cur_token.type == tokentype::punctuation && cur_token.value == ";")
-        {
-            advance(); // consume ';'
-        }
+        if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
         return expr;
     }
 
-    // Entry point: parses multiple statements until end of file
     std::vector<std::unique_ptr<Expr>> parse_program()
     {
         std::vector<std::unique_ptr<Expr>> statements;
