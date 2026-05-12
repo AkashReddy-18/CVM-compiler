@@ -12,9 +12,14 @@ enum class tokentype {
     punctuation,
     endoffile,
     unknown,
-    kw_if,    // NEW
-    kw_else,  // NEW
-    kw_while  // NEW
+    kw_if,
+    kw_else,
+    kw_while,
+    kw_let,
+    kw_print,
+    kw_int,    // Support int
+    kw_bool,   // Support bool
+    kw_input   // Support input
 };
 
 struct token {
@@ -34,10 +39,11 @@ enum class opcode : int {
     halt,
     set_global,
     get_global,
-    jump,           // NEW: Unconditional jump
-    jump_if_false,  // NEW: Jump if top of stack is 0
-    less,           // NEW: a < b
-    equal           // NEW: a == b
+    jump,
+    jump_if_false,
+    less,
+    equal,
+    input      // Takes input from user
 };
 
 #endif
