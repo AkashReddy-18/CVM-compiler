@@ -9,11 +9,12 @@ class literal_expr;
 class binary_expr;
 class var_decl_expr;
 class var_read_expr;
-class assign_stmt;    // NEW
+class assign_stmt;
 class print_stmt;
-class block_stmt;     // NEW
-class if_stmt;        // NEW
-class while_stmt;     // NEW
+class block_stmt;
+class if_stmt;
+class while_stmt;
+class input_expr; // NEW
 
 class ast_visitor
 {
@@ -22,11 +23,12 @@ public:
     virtual void visit(binary_expr *expr) = 0;
     virtual void visit(var_decl_expr* expr) = 0;
     virtual void visit(var_read_expr* expr) = 0;
-    virtual void visit(assign_stmt* expr) = 0;   // NEW
+    virtual void visit(assign_stmt* expr) = 0;
     virtual void visit(print_stmt* expr) = 0;
-    virtual void visit(block_stmt* expr) = 0;    // NEW
-    virtual void visit(if_stmt* expr) = 0;       // NEW
-    virtual void visit(while_stmt* expr) = 0;    // NEW
+    virtual void visit(block_stmt* expr) = 0;
+    virtual void visit(if_stmt* expr) = 0;
+    virtual void visit(while_stmt* expr) = 0;
+    virtual void visit(input_expr* expr) = 0; // NEW
     virtual ~ast_visitor() = default;
 };
 
@@ -72,7 +74,6 @@ public:
     void accept(ast_visitor* visitor) override { visitor->visit(this); }
 };
 
-// NEW: Represents "z = x + y;"
 class assign_stmt : public Expr {
 public:
     std::string var_name;
@@ -89,7 +90,6 @@ public:
     void accept(ast_visitor* visitor) override { visitor->visit(this); }
 };
 
-// NEW: Represents { stmt1; stmt2; }
 class block_stmt : public Expr {
 public:
     std::vector<std::unique_ptr<Expr>> statements;
@@ -97,24 +97,28 @@ public:
     void accept(ast_visitor* visitor) override { visitor->visit(this); }
 };
 
-// NEW: Represents if (condition) { ... } else { ... }
 class if_stmt : public Expr {
 public:
     std::unique_ptr<Expr> condition;
     std::unique_ptr<Expr> then_branch;
-    std::unique_ptr<Expr> else_branch; // can be null
+    std::unique_ptr<Expr> else_branch;
     if_stmt(std::unique_ptr<Expr> cond, std::unique_ptr<Expr> then_b, std::unique_ptr<Expr> else_b)
         : condition(std::move(cond)), then_branch(std::move(then_b)), else_branch(std::move(else_b)) {}
     void accept(ast_visitor* visitor) override { visitor->visit(this); }
 };
 
-// NEW: Represents while (condition) { ... }
 class while_stmt : public Expr {
 public:
     std::unique_ptr<Expr> condition;
     std::unique_ptr<Expr> body;
     while_stmt(std::unique_ptr<Expr> cond, std::unique_ptr<Expr> b)
         : condition(std::move(cond)), body(std::move(b)) {}
+    void accept(ast_visitor* visitor) override { visitor->visit(this); }
+};
+
+// NEW: Represents 'input()'
+class input_expr : public Expr {
+public:
     void accept(ast_visitor* visitor) override { visitor->visit(this); }
 };
 

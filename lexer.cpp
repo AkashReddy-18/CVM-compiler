@@ -13,25 +13,25 @@ private:
     size_t position;
     int cur_line;
 
-    char peek() const //to get current char
+    char peek() const
     {
         if(position >= src.length())return '\0';
         return src[position];
     }
 
-    char peekNext() const //to look one ahead
+    char peekNext() const
     {
         if(position + 1 >= src.length())return '\0';
         return src[position + 1];
     }
 
-    char advance() //consume and return current char ..
+    char advance()
     {
         if(position>=src.length())return '\0';
         return src[position++];
     }
 
-    void skipwhitespace() //ignore all kind of white spaces and comments!
+    void skipwhitespace()
     {
         while(true)
         {
@@ -45,7 +45,6 @@ private:
             }
             else if(peek() == '/' && peekNext() == '/')
             {
-                // Skip single-line comment
                 while(peek() != '\n' && peek() != '\0')
                 {
                     advance();
@@ -73,7 +72,6 @@ token lexer::nexttoken()
         return token{tokentype::endoffile,"",cur_line};
     }
 
-    //idnetifying numbers
     if(std::isdigit(c))
     {
         std::string num_str;
@@ -84,7 +82,6 @@ token lexer::nexttoken()
         return token{tokentype::number, num_str, cur_line};
     }
 
-    //identify identifiers and key words
     if(std::isalpha(c) || c=='_')
     {
         std::string id_str;
@@ -92,21 +89,18 @@ token lexer::nexttoken()
         {
             id_str+=advance();
         }   
-        if(id_str=="int" || id_str=="return")
-        {
-            return token{tokentype::keyword, id_str, cur_line};
-        }
         if(id_str=="if") return token{tokentype::kw_if, id_str, cur_line};
         if(id_str=="else") return token{tokentype::kw_else, id_str, cur_line};
         if(id_str=="while") return token{tokentype::kw_while, id_str, cur_line};
-        if(id_str=="let" || id_str=="print")
-        {
-            return token{tokentype::keyword, id_str, cur_line};
-        }
+        if(id_str=="let") return token{tokentype::kw_let, id_str, cur_line};
+        if(id_str=="print") return token{tokentype::kw_print, id_str, cur_line};
+        if(id_str=="int") return token{tokentype::kw_int, id_str, cur_line};
+        if(id_str=="bool") return token{tokentype::kw_bool, id_str, cur_line};
+        if(id_str=="input") return token{tokentype::kw_input, id_str, cur_line};
+        
         return token{tokentype::identifier, id_str, cur_line};
     }
 
-    //identifying operators
     if(c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '<' || c == '>')
     {
         std::string op_str;
@@ -118,7 +112,6 @@ token lexer::nexttoken()
         return token{tokentype::op, op_str, cur_line};
     }
 
-    //identifying punctuation
     if (c == '(' || c == ')' || c == '{' || c == '}' || c == ';')
     {
         std::string punc_str;
@@ -137,36 +130,17 @@ std::string typetostring(tokentype type)
     {
         case tokentype::identifier: return "Identifier";
         case tokentype::number: return "Number";
-        case tokentype::keyword: return "keyword";
         case tokentype::op: return "operator";
         case tokentype::punctuation: return "punctuation";
         case tokentype::endoffile: return "EOF";
-        default: return "Unkown";
+        case tokentype::kw_if: return "if";
+        case tokentype::kw_else: return "else";
+        case tokentype::kw_while: return "while";
+        case tokentype::kw_let: return "let";
+        case tokentype::kw_print: return "print";
+        case tokentype::kw_int: return "int";
+        case tokentype::kw_bool: return "bool";
+        case tokentype::kw_input: return "input";
+        default: return "Unknown";
     }
 }
-
-// int main()
-// {
-//     std::string code = R"(
-//         int main() {
-//             int magic_number = 42;
-//             return magic_number;
-//         }
-//     )";
-
-//     lexer lex(code);
-//     token token;
-
-//     std::cout << "Type\t\tValue\t\tLine\n";
-//     std::cout << "--------------------------------------\n";
-
-//     do
-//     {
-//         token = lex.nexttoken();
-//         std::cout << typetostring(token.type) << "\t'" 
-//                   << token.value << "'\t\t" 
-//                   << token.line << "\n";
-//     }while(token.type != tokentype::endoffile);
-
-//     return 0;
-// }
