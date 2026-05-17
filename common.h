@@ -43,7 +43,9 @@ enum class opcode : int {
     jump_if_false,
     less,
     equal,
-    input      // Takes input from user
+    input,
+    logical_or,  // NEW: a | b
+    logical_and  // NEW: a & b
 };
 
 #endif

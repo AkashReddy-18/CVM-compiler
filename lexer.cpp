@@ -100,17 +100,17 @@ token lexer::nexttoken()
         
         return token{tokentype::identifier, id_str, cur_line};
     }
-
-    if(c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '<' || c == '>')
+//identifying operators
+if(c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&')
+{
+    std::string op_str;
+    op_str+= advance();
+    if(op_str=="=" and peek() == '=')
     {
-        std::string op_str;
-        op_str+= advance();
-        if(op_str=="=" and peek() == '=')
-        {
-            op_str+=advance();
-        }
-        return token{tokentype::op, op_str, cur_line};
+        op_str+=advance();
     }
+    return token{tokentype::op, op_str, cur_line};
+}
 
     if (c == '(' || c == ')' || c == '{' || c == '}' || c == ';')
     {
