@@ -1,0 +1,22 @@
+int limit = 5;
+int count = 1;
+int total = 0;
+
+while (count < limit + 1) {
+    total = total + count;
+    count = count + 1;
+}
+
+// Print the result (Expected: 15)
+print total;
+
+// If-Else logic check
+if (total == 15) {
+    print 1; // Print 1 for success
+} else {
+    print 0;
+}
+
+// Boolean logic check (Expected: 1)
+bool check = (total < 20) & (10 < total);
+print check;
