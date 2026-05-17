@@ -17,8 +17,11 @@ CVM++ is a modular scripting language implemented in C++. It follows a complete 
 
 ## Language Syntax Example
 int x = 10;
+
 bool ok = 1;
+
 int val = input();
+
 while (x < 15) {
     if (ok & (x == 12)) {
         print 100;
