@@ -83,6 +83,20 @@ public:
                     stack.push_back(a == b ? 1 : 0);
                     break;
                 }
+                case opcode::logical_or:
+                {
+                    int b = stack.back(); stack.pop_back();
+                    int a = stack.back(); stack.pop_back();
+                    stack.push_back((a != 0 || b != 0) ? 1 : 0);
+                    break;
+                }
+                case opcode::logical_and:
+                {
+                    int b = stack.back(); stack.pop_back();
+                    int a = stack.back(); stack.pop_back();
+                    stack.push_back((a != 0 && b != 0) ? 1 : 0);
+                    break;
+                }
                 case opcode::jump:
                 {
                     ip = program[ip];
