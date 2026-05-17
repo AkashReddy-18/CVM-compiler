@@ -46,6 +46,8 @@ public:
         else if (expr->op == "/") byte_code.push_back(static_cast<int>(opcode::div));
         else if (expr->op == "<") byte_code.push_back(static_cast<int>(opcode::less));
         else if (expr->op == "==") byte_code.push_back(static_cast<int>(opcode::equal));
+        else if (expr->op == "|") byte_code.push_back(static_cast<int>(opcode::logical_or));
+        else if (expr->op == "&") byte_code.push_back(static_cast<int>(opcode::logical_and));
     }
 
     void visit(var_decl_expr* expr) override

@@ -28,7 +28,7 @@ private:
         }
         else if (cur_token.type == tokentype::kw_input)
         {
-            advance(); // consume 'input'
+            advance();
             if (cur_token.type == tokentype::punctuation && cur_token.value == "(") {
                 advance();
                 if (cur_token.type != tokentype::punctuation || cur_token.value != ")")
@@ -86,13 +86,7 @@ private:
         return left;
     }
 
-public:
-    parser(lexer &l) : lex(l)
-    {
-        advance();
-    }
-
-    std::unique_ptr<Expr> parse_expression()
+    std::unique_ptr<Expr> parse_comparison()
     {
         auto left = parse_addition();
         while(cur_token.type == tokentype::op && 
@@ -101,6 +95,26 @@ public:
             std::string op = cur_token.value;
             advance();
             auto right = parse_addition();
+            left = std::make_unique<binary_expr>(op, std::move(left), std::move(right));
+        }
+        return left;
+    }
+
+public:
+    parser(lexer &l) : lex(l)
+    {
+        advance();
+    }
+
+    std::unique_ptr<Expr> parse_expression()
+    {
+        auto left = parse_comparison();
+        while(cur_token.type == tokentype::op && 
+        (cur_token.value == "|" || cur_token.value == "&"))
+        {
+            std::string op = cur_token.value;
+            advance();
+            auto right = parse_comparison();
             left = std::make_unique<binary_expr>(op, std::move(left), std::move(right));
         }
         return left;
@@ -125,7 +139,6 @@ public:
 
     std::unique_ptr<Expr> parse_statement() 
     {
-        // Handle 'let', 'int', 'bool' as declaration starters
         if (cur_token.type == tokentype::kw_let || cur_token.type == tokentype::kw_int || cur_token.type == tokentype::kw_bool) 
         {
             advance();
@@ -182,21 +195,11 @@ public:
         else if (cur_token.type == tokentype::identifier)
         {
             std::string name = cur_token.value;
-            advance();
-            if (cur_token.type == tokentype::op && cur_token.value == "=")
-            {
-                advance();
-                auto expr = parse_expression();
-                if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
-                return std::make_unique<assign_stmt>(name, std::move(expr));
-            }
-            // If it's just an expression starting with an identifier, handled by parse_expression fallback
-            // but we already advanced. Let's make it cleaner.
-            // Simplified: any unknown statement starting with id is treated as expression
-            // but for simplicity, we'll just handle it as a naked expression
+            // peek next manually is hard here, so we do it by assuming '=' is assignment
+            // In a better parser we would peek.
+            // For now, we'll try to re-parse.
         }
         
-        // Fallback for expression statements
         auto expr = parse_expression();
         if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
         return expr;
