@@ -61,6 +61,16 @@ public:
     lexer(std::string_view src) : src(src), position(0), cur_line(1){}
 
     token nexttoken();
+
+    token peekToken()
+    {
+        size_t old_pos = position;
+        int old_line = cur_line;
+        token t = nexttoken();
+        position = old_pos;
+        cur_line = old_line;
+        return t;
+    }
 };
 
 token lexer::nexttoken()

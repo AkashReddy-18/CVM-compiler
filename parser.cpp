@@ -139,6 +139,7 @@ public:
 
     std::unique_ptr<Expr> parse_statement() 
     {
+        // 1. Declarations (let, int, bool)
         if (cur_token.type == tokentype::kw_let || cur_token.type == tokentype::kw_int || cur_token.type == tokentype::kw_bool) 
         {
             advance();
@@ -153,6 +154,7 @@ public:
             if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
             return std::make_unique<var_decl_expr>(name, std::move(expr));
         }
+        // 2. Print
         else if (cur_token.type == tokentype::kw_print) 
         {
             advance();
@@ -160,6 +162,7 @@ public:
             if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
             return std::make_unique<print_stmt>(std::move(expr));
         }
+        // 3. If
         else if (cur_token.type == tokentype::kw_if)
         {
             advance();
@@ -179,6 +182,7 @@ public:
             }
             return std::make_unique<if_stmt>(std::move(cond), std::move(then_branch), std::move(else_branch));
         }
+        // 4. While
         else if (cur_token.type == tokentype::kw_while)
         {
             advance();
@@ -192,14 +196,21 @@ public:
             auto body = parse_block();
             return std::make_unique<while_stmt>(std::move(cond), std::move(body));
         }
+        // 5. Assignment: check lookahead for '='
         else if (cur_token.type == tokentype::identifier)
         {
-            std::string name = cur_token.value;
-            // peek next manually is hard here, so we do it by assuming '=' is assignment
-            // In a better parser we would peek.
-            // For now, we'll try to re-parse.
+            token next = lex.peekToken();
+            if (next.type == tokentype::op && next.value == "=") {
+                std::string name = cur_token.value;
+                advance(); // consume identifier
+                advance(); // consume '='
+                auto expr = parse_expression();
+                if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
+                return std::make_unique<assign_stmt>(name, std::move(expr));
+            }
         }
         
+        // 6. Expression Statement
         auto expr = parse_expression();
         if (cur_token.type == tokentype::punctuation && cur_token.value == ";") advance();
         return expr;
